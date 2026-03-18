@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>FX a IRS dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family: Arial; margin: 20px; background: #f4f4f4; }
+.chart-container { width: 100%; max-width: 900px; margin-bottom: 50px; }
+</style>
+</head>
+<body>
+
+<h1>Vývoj kurzů – poslední měsíc</h1>
+
+<div class="chart-container"><canvas id="usdczk"></canvas></div>
+<div class="chart-container"><canvas id="eurczk"></canvas></div>
+<div class="chart-container"><canvas id="eurusd"></canvas></div>
+<div class="chart-container"><canvas id="irs5y"></canvas></div>
+
+<script>
+// Helper – fetch JSON
+async function j(url){ return await (await fetch(url)).json(); }
+
+// Past 30 days
+const today = new Date();
+const past = new Date();
+past.setDate(today.getDate() - 30);
+const t = today.toISOString().slice(0,10);
+const p = past.toISOString().slice(0,10);
+
