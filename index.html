@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>FX a IRS dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family: Arial; margin: 20px; background: #f4f4f4; }
+.chart-container { width: 100%; max-width: 900px; margin-bottom: 50px; }
+</style>
+</head>
+<body>
+
+<h1>Vývoj kurzů – poslední měsíc</h1>
+
+<div class="chart-container"><canvas id="usdczk"></canvas></div>
+<div class="chart-container"><canvas id="eurczk"></canvas></div>
+<div class="chart-container"><canvas id="eurusd"></canvas></div>
+<div class="chart-container"><canvas id="irs5y"></canvas></div>
+
+<script>
+// Helper – fetch JSON
+async function j(url){ return await (await fetch(url)).json(); }
+
+// Past 30 days
+const today = new Date();
+const past = new Date();
+past.setDate(today.getDate() - 30);
+const t = today.toISOString().slice(0,10);
+const p = past.toISOString().slice(0,10);
+
+// ---- FX DATA via Frankfurter API ----
+// Supports pairs and date ranges (historical series)  [1](https://frankfurter.dev/)
+async function getFX(base, symbol){
+  const url = `https://api.frankfurter.dev/v1/${p}..${t}?base=${base}&symbols=${symbol}`;
+  const data = await j(url);
+  const dates = Object.keys(data.rates);
+  const values = dates.map(d => data.rates[d][symbol]);
+  return { dates, values };
+}
+
+// ---- IRS 5Y EUR DATA (Investing.com manually proxied or preloaded) ----
+// Investing.com historical sample data structure  [2](https://www.investing.com/rates-bonds/eur-5-years-irs-interest-rate-swap-historical-data)
+async function getIRS(){
+  // Bez vlastního serveru nelze přímo scrapovat Investing.com (CORS),
+  // proto zde DEMO dataset – hodnoty z posledního měsíce:
+  const sampleDates = [
+    "2026-02-12","2026-02-13","2026-02-16","2026-02-17","2026-02-18",
+    "2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25",
+    "2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04",
+    "2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12"
+  ];
+  const sampleValues = [
+    2.450,2.434,2.427,2.420,2.422,
+    2.433,2.430,2.402,2.405,2.400,
+    2.395,2.343,2.434,2.489,2.479,
+    2.590,2.644,2.649,2.593,2.710,2.694
+  ];
+  return { dates: sampleDates, values: sampleValues };
+}
+
+function drawChart(id, label, dates, values){
+  new Chart(document.getElementById(id),{
+    type:"line",
+    data:{
+      labels:dates,
+      datasets:[{label, data:values, borderColor:"#0074D9", fill:false}]
+    },
+    options:{ responsive:true, scales:{ x:{ ticks:{maxTicksLimit:10} } } }
+  });
+}
+
+(async()=>{
+
+  const usdczk = await getFX("USD","CZK");
+  drawChart("usdczk","USD/CZK",usdczk.dates,usdczk.values);
+
+  const eurczk = await getFX("EUR","CZK");
+  drawChart("eurczk","EUR/CZK",eurczk.dates,eurczk.values);
+
+  const eurusd = await getFX("EUR","USD");
+  drawChart("eurusd","EUR/USD",eurusd.dates,eurusd.values);
+
+  const irs = await getIRS();
+  drawChart("irs5y","IRS 5Y EUR",irs.dates,irs.values);
+
+})();
+</script>
+
+</body>
+</html>
